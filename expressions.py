@@ -1,3 +1,4 @@
+from enum import Enum
 from expression_processor import (
     ExpProcessor,
     ExpContext,
@@ -6,47 +7,54 @@ from expression_processor import (
 )
 
 
+class TokenType(Enum):
+    INTERFACES = "interfaces"
+    INTERFACE = "interface"
+    OUTPUTS = "outputs"
+    PARENT = "parent"
+    PROVIDER = "provider"
+    VARIABLE = "variable"
+    VARIABLE_NAME = "variable name"
+    LOCAL = "local"
+    LOCAL_NAME = "local name"
+    MODULE = "module"
+    MODULE_NAME = "module name"
+    MODULE_OUTPUT = "module output"
+    DATA = "data"
+    DATA_TYPE = "data type"
+    DATA_NAME = "data name"
+    RESOURCE = "resource"
+    RESOURCE_TYPE = "resource type"
+    RESOURCE_NAME = "resource name"
+
+
+def interfaces_render(context: ExpContext, item: ExpFound):
+    result = f"i_{item.arguments['type']}"
+    if "id" in item.arguments:
+        context.embrace = (
+            f"[ for i in {{result}}: i.data if i.id == \"{item.arguments['id']}\"]"
+        )
+    return result
+
+
 class ExpProcessorInterfaces(ExpProcessor):
     def __init__(self):
         super().__init__(
-            "Interfaces",
+            TokenType.INTERFACES,
             f"interfaces",
             arguments={"type": str, "id": None},
-            f_render=self._render,
+            f_render=interfaces_render,
         )
 
-    def _render(self, context: ExpContext, item: ExpFound):
-        result = f"i_{item.arguments['type']}"
-        if "id" in item.arguments:
-            context.embrace = (
-                f"[ for i in {{result}}: i.data if i.id == \"{item.arguments['id']}\"]"
-            )
-        return result
 
-
-class ExpProcessorTfeOutputs(ExpProcessor):
+class ExpProcessorOutputs(ExpProcessor):
     def __init__(self):
         super().__init__(
-            "TFE Outputs",
+            TokenType.OUTPUTS,
             "outputs",
             last_match=True,
-            f_render=lambda c, i: ".".join(i.get("remaining", [])),
+            # f_render=lambda c, i: ".".join(i.get("remaining", [])),
         )
-
-
-def validate_parent(c: ExpContext, i: ExpFound, render: dict):
-    if i.arguments["parent"] not in render["parents"]:
-        raise Exception(f"Parent '{i.arguments['parent']}' does not exist")
-
-
-def validate_provider(c: ExpContext, i: ExpFound, render: dict):
-    if i.arguments["provider"] not in render["providers"]:
-        raise Exception(f"Provider '{i.arguments['provider']}' does not exist")
-
-
-def validate_module(c: ExpContext, i: ExpFound, render: dict):
-    if i.value not in render["tfcode"]["module"]:
-        raise Exception(f"Module '{i.value}' not found")
 
 
 class Expression(list):
@@ -55,82 +63,82 @@ class Expression(list):
     tf_processor = ExpProcessorCollection(
         [
             ExpProcessor(
-                "Parent Target",
+                TokenType.PARENT,
                 f"parent",
                 arguments={"parent": str},
                 children=[
                     ExpProcessorInterfaces(),
-                    ExpProcessorTfeOutputs(),
+                    ExpProcessorOutputs(),
                 ],
                 f_render=lambda c, i: f"data.tfm[\"{i.arguments['parent']}\"].values",
-                f_process=validate_parent,
             ),
             ExpProcessor(
-                "Provider Target",
+                TokenType.PROVIDER,
                 f"provider",
                 arguments={"provider": str},
                 children=[
                     ExpProcessorInterfaces(),
-                    ExpProcessorTfeOutputs(),
+                    ExpProcessorOutputs(),
                 ],
                 f_render=lambda c, i: f"data.tfm[\"{i.arguments['provider']}\"].values",
-                f_process=validate_provider,
             ),
             ExpProcessor(
-                "Variable",
+                TokenType.VARIABLE,
                 r"var",
                 children=[
                     ExpProcessorInterfaces(),
                     ExpProcessor(
-                        "Variable Name",
+                        TokenType.VARIABLE_NAME,
                         last_match=True,
-                        f_process=lambda c, i, render: render["tfcode"][
-                            "variable"
-                        ].update({i.value: {}}),
                     ),
                 ],
             ),
             ExpProcessor(
-                "Local",
+                TokenType.LOCAL,
                 r"local",
                 children=[
                     ExpProcessorInterfaces(),
                     ExpProcessor(
-                        "Local Name",
+                        TokenType.LOCAL_NAME,
                         last_match=True,
-                        f_process=lambda c, i, render: render["tfcode"]["local"].update(
-                            {i.value: {}}
-                        ),
                     ),
                 ],
             ),
             ExpProcessor(
-                "Module",
+                TokenType.MODULE,
                 r"module",
                 children=[
-                    ExpProcessorInterfaces(),
                     ExpProcessor(
-                        "Module Name", last_match=True, f_process=validate_module
+                        TokenType.MODULE_NAME,
+                        children=[
+                            ExpProcessorInterfaces(),
+                            ExpProcessor(
+                                TokenType.MODULE_OUTPUT,
+                                last_match=True,
+                            ),
+                        ],
                     ),
                 ],
             ),
             ExpProcessor(
-                "Data",
+                TokenType.DATA,
                 r"data",
                 children=[
                     ExpProcessor(
-                        "Data Type",
-                        children=[ExpProcessor("Data Name", last_match=True)],
+                        TokenType.DATA_TYPE,
+                        children=[ExpProcessor(TokenType.DATA_NAME, last_match=True)],
                     )
                 ],
             ),
             ExpProcessor(
-                "Resource",
+                TokenType.RESOURCE,
                 r"resource",
                 children=[
                     ExpProcessor(
-                        "Resource Type",
-                        children=[ExpProcessor("Resource Name", last_match=True)],
+                        TokenType.RESOURCE_TYPE,
+                        children=[
+                            ExpProcessor(TokenType.RESOURCE_NAME, last_match=True)
+                        ],
                     )
                 ],
             ),
@@ -141,9 +149,6 @@ class Expression(list):
         self.expression = expression
         self.extracted = self.tf_processor.extract(expression)
         self.contextes = [self.tf_processor.parse(value) for value in self.extracted]
-
-    def process(self, tfcode: dict):
-        [self.tf_processor.process(context, tfcode) for context in self.contextes]
 
     def render(self):
         for context in self.contextes:
