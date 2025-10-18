@@ -43,6 +43,7 @@ class ExpProcessor(list):
         children: list = [],
         f_found=lambda c, i: ...,
         f_render=lambda c, i: ".".join([i.value, *i.remaining]),
+        unsupported: bool = False,
     ):
         if isinstance(children, ExpProcessor):
             raise ValueError("Children must be a list of ExpProcessor")
@@ -61,6 +62,7 @@ class ExpProcessor(list):
         )
         self.f_found = f_found
         self.f_render = f_render
+        self.unsupported = unsupported
 
     def __str__(self):
         if self:
@@ -99,6 +101,9 @@ class ExpProcessor(list):
         # )
         if not value:
             return None
+
+        if self.unsupported:
+            raise ValueError(f"'{self.id.value}' is not supported in this context")
 
         # Update context
         context.found.append(

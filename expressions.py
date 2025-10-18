@@ -133,6 +133,11 @@ class Expression(list):
                                 f_render=lambda c, i: f"i_{i.arguments['type']}",
                             ),
                             ExpProcessor(
+                                TokenType.INTERFACES,
+                                f"interfaces",
+                                unsupported=True,
+                            ),
+                            ExpProcessor(
                                 TokenType.MODULE_OUTPUT,
                                 last_match=True,
                             ),

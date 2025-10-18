@@ -23,6 +23,7 @@ render = {
 expressions = [
     "${parent(base).interface(kms,test1)}",
     "${provider(base).interfaces(kms,mykms)}",
+    "${provider(base).interfaces(kms)}",
     "${module.test2.an_output}",
     "${module.test1.interface(kms)}",
     "${var.test}",
