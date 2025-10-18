@@ -131,7 +131,9 @@ class ExpProcessorCollection(list):
         self.extend(processors)
 
     def extract(self, expression: str):
-        extracted = [ e.extract(expression) for e in self ]
+        extracted = []
+        for e_found in re.findall(r"\$\{([^\$\$\}]*)\}", expression):
+            extracted.extend([ e.extract(e_found) for e in self ])
         return [ i for e in extracted for i in e ]
 
     def parse(self, value: str) -> ExpContext:
@@ -148,7 +150,7 @@ class ExpProcessorCollection(list):
 
     def render(self, context: ExpContext):
         result = ".".join(
-            [s for s in [i["f_render"](context, i) for i in context.found] if s]
+            [s for s in [i.f_render(context, i) for i in context.found] if s]
         )
         if context.embrace:
             result = context.embrace.replace("{result}", result)
