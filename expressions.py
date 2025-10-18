@@ -8,6 +8,7 @@ from expression_processor import (
 
 
 class TokenType(Enum):
+    COLLECTOR = "collector"
     INTERFACES = "interfaces"
     INTERFACE = "interface"
     OUTPUTS = "outputs"
@@ -28,13 +29,17 @@ class TokenType(Enum):
     RESOURCE_NAME = "resource name"
 
 
-def interfaces_render(context: ExpContext, item: ExpFound):
-    result = f"i_{item.arguments['type']}"
-    if "id" in item.arguments:
-        context.embrace = (
-            f"[ for i in {{result}}: i.data if i.id == \"{item.arguments['id']}\"]"
+class ExpProcessorInterface(ExpProcessor):
+    def __init__(self):
+        super().__init__(
+            TokenType.INTERFACE,
+            f"interface",
+            arguments={"type": str, "id": str},
+            f_render=self.render,
         )
-    return result
+
+    def render(self, context: ExpContext, item: ExpFound):
+        context.embrace = f"local.i_data.{item.arguments['type']}[\"{{result}}.{item.arguments['id']}\"]"
 
 
 class ExpProcessorInterfaces(ExpProcessor):
@@ -43,8 +48,33 @@ class ExpProcessorInterfaces(ExpProcessor):
             TokenType.INTERFACES,
             f"interfaces",
             arguments={"type": str, "id": None},
-            f_render=interfaces_render,
+            f_render=self.render,
         )
+
+    def render(self, context: ExpContext, item: ExpFound):
+        context.embrace = (
+            (
+                f"[ local.i_data.{item.arguments['type']}[\"{{result}}.{item.arguments['id']}\"] ]"
+            )
+            if "id" in item.arguments
+            else (
+                f"[ for ik, iv in local.i_data.{item.arguments['type']} : iv if startswith(ik, \"{{result}}\") ]"
+            )
+        )
+
+
+def collector_render(context: ExpContext, item: ExpFound):
+    match item.arguments.get("source", None):
+        case "module":
+            ...
+        case "parent" | "provider":
+            return f"[ for ik, iv in local.i_data.{item.arguments['type']} : iv if startswith(ik, \"{item.arguments['source']}-\") ]"
+        case None:
+            return f"[ for iv in local.i_data.{item.arguments['type']}: iv ]"
+        case _:
+            raise ValueError(
+                f"collector source '{item.arguments['source']}' is not valid (expected: module | parent | provider)"
+            )
 
 
 class ExpProcessorOutputs(ExpProcessor):
@@ -53,7 +83,6 @@ class ExpProcessorOutputs(ExpProcessor):
             TokenType.OUTPUTS,
             "outputs",
             last_match=True,
-            # f_render=lambda c, i: ".".join(i.get("remaining", [])),
         )
 
 
@@ -63,24 +92,53 @@ class Expression(list):
     tf_processor = ExpProcessorCollection(
         [
             ExpProcessor(
+                TokenType.COLLECTOR,
+                f"collector",
+                arguments={"type": str, "source": None},
+                f_render=collector_render,
+            ),
+            ExpProcessor(
                 TokenType.PARENT,
                 f"parent",
                 arguments={"parent": str},
                 children=[
+                    ExpProcessorInterface(),
                     ExpProcessorInterfaces(),
                     ExpProcessorOutputs(),
                 ],
-                f_render=lambda c, i: f"data.tfm[\"{i.arguments['parent']}\"].values",
+                f_render=lambda c, i: f"parent-{i.arguments['parent']}",
             ),
             ExpProcessor(
                 TokenType.PROVIDER,
                 f"provider",
                 arguments={"provider": str},
                 children=[
+                    ExpProcessorInterface(),
                     ExpProcessorInterfaces(),
                     ExpProcessorOutputs(),
                 ],
-                f_render=lambda c, i: f"data.tfm[\"{i.arguments['provider']}\"].values",
+                f_render=lambda c, i: f"provider-{i.arguments['provider']}",
+            ),
+            ExpProcessor(
+                TokenType.MODULE,
+                r"module",
+                children=[
+                    ExpProcessor(
+                        TokenType.MODULE_NAME,
+                        children=[
+                            ExpProcessor(
+                                TokenType.INTERFACE,
+                                f"interface",
+                                arguments={"type": str},
+                                f_render=lambda c, i: f"i_{i.arguments['type']}",
+                            ),
+                            ExpProcessor(
+                                TokenType.MODULE_OUTPUT,
+                                last_match=True,
+                            ),
+                        ],
+                    ),
+                ],
             ),
             ExpProcessor(
                 TokenType.VARIABLE,
@@ -101,22 +159,6 @@ class Expression(list):
                     ExpProcessor(
                         TokenType.LOCAL_NAME,
                         last_match=True,
-                    ),
-                ],
-            ),
-            ExpProcessor(
-                TokenType.MODULE,
-                r"module",
-                children=[
-                    ExpProcessor(
-                        TokenType.MODULE_NAME,
-                        children=[
-                            ExpProcessorInterfaces(),
-                            ExpProcessor(
-                                TokenType.MODULE_OUTPUT,
-                                last_match=True,
-                            ),
-                        ],
                     ),
                 ],
             ),

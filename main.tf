@@ -1,6 +1,6 @@
 locals {
   parents = {
-    "123456-test" = {
+    "parent-test" = {
       interfaces = {
         kms = {
           test1 = { "value" = 1 }
@@ -8,7 +8,7 @@ locals {
         }
       }
     }
-    "000000-base" = {
+    "parent-base" = {
       interfaces = {
         kms = {
           test1 = { "value" = 3 }
@@ -21,7 +21,7 @@ locals {
     }
   }
 
-  interfaces = {
+  i_data = {
     for i_type in distinct(flatten([for value in values(local.parents) : keys(value.interfaces)])) : i_type => merge([
       for p_name, p_values in local.parents : {
         for i_id, i_values in lookup(p_values.interfaces, i_type, {}) : "${p_name}.${i_id}" => i_values
@@ -31,16 +31,27 @@ locals {
 }
 
 output "interfaces" {
-  value = local.interfaces
+  value = local.i_data
 }
 
-output "i_list" {
+output "i_map" {
   value = merge([
-    { for ik, iv in local.interfaces.kms : ik => iv if startswith(ik, "000000-base") },
-    { for ik, iv in local.interfaces.kms : ik => iv if startswith(ik, "123456-test") },
+    { for ik, iv in local.i_data.kms : ik => iv if startswith(ik, "parent-base") },
+    { for ik, iv in local.i_data.kms : ik => iv if startswith(ik, "parent-test.test2") },
   ]...)
 }
 
+output "i_list" {
+  value = flatten([
+    [for ik, iv in local.i_data.kms : iv if startswith(ik, "parent-base")],
+    [for ik, iv in local.i_data.kms : iv if startswith(ik, "parent-test.test2")],
+  ])
+}
+
 output "i_obj" {
-  value = merge([{ for ik, iv in local.interfaces.base : ik => iv if startswith(ik, "000000-base.base1") }]...)
+  value = merge([{ for ik, iv in local.i_data.base : ik => iv if startswith(ik, "000000-base.base1") }]...)
+}
+
+output "collector" {
+  value = [for iv in local.i_data.kms : iv]
 }

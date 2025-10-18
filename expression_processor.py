@@ -119,7 +119,7 @@ class ExpProcessor(list):
 
             # If no child could process the remaining values, raise an error
             raise ValueError(
-                f"'{context.tokens[position+1]}' is not a valid object (expected: {' | '.join([i.exp_help for i in self])})"
+                f"'{context.tokens[position+1]}' is not valid (expected: {' | '.join([i.exp_help for i in self])})"
             )
 
         # Call found handler

@@ -21,45 +21,46 @@ render = {
 }
 
 expressions = [
-    "${parent(base).interfaces(kms,mykms)}",
+    "${parent(base).interface(kms,test1)}",
     "${provider(base).interfaces(kms,mykms)}",
-    "${module.test.an_output}",
-    "${module.test.interfaces(kms)}",
+    "${module.test2.an_output}",
+    "${module.test1.interface(kms)}",
     "${var.test}",
+    "${collector(kms)}",
 ]
 
-# try:
-#     for expression in expressions:
-#         e = Expression(expression)
-#         print(e.render())
+try:
+    for expression in expressions:
+        e = Expression(expression)
+        print(e.render())
 
-#         # Validation
-#         for c in e.contextes:
-#             for f in c.found:
-#                 match f.id:
-#                     case TokenType.PARENT:
-#                         if f.arguments["parent"] not in render["parents"]:
-#                             raise ValueError(
-#                                 f"parent '{f.arguments['parent']}' not found"
-#                             )
-#                     case TokenType.PROVIDER:
-#                         if f.arguments["provider"] not in render["providers"]:
-#                             raise ValueError(
-#                                 f"provider '{f.arguments['provider']}' not found"
-#                             )
-#                     case TokenType.MODULE_NAME:
-#                         if f.value not in render["tfcode"]["module"]:
-#                             raise ValueError(f"module '{f.value}' not found")
+        # Validation
+        for c in e.contextes:
+            for f in c.found:
+                match f.id:
+                    case TokenType.PARENT:
+                        if f.arguments["parent"] not in render["parents"]:
+                            raise ValueError(
+                                f"parent '{f.arguments['parent']}' not found"
+                            )
+                    case TokenType.PROVIDER:
+                        if f.arguments["provider"] not in render["providers"]:
+                            raise ValueError(
+                                f"provider '{f.arguments['provider']}' not found"
+                            )
+                    case TokenType.MODULE_NAME:
+                        if f.value not in render["tfcode"]["module"]:
+                            raise ValueError(f"module '{f.value}' not found")
 
-#                     case TokenType.VARIABLE_NAME:
-#                         if f.value not in render["tfcode"]["variable"]:
-#                             render["tfcode"]["variable"][f.value] = {}
-#                     case TokenType.LOCAL_NAME:
-#                         if f.value not in render["tfcode"]["local"]:
-#                             render["tfcode"]["local"][f.value] = {}
+                    case TokenType.VARIABLE_NAME:
+                        if f.value not in render["tfcode"]["variable"]:
+                            render["tfcode"]["variable"][f.value] = {}
+                    case TokenType.LOCAL_NAME:
+                        if f.value not in render["tfcode"]["local"]:
+                            render["tfcode"]["local"][f.value] = {}
 
-# except Exception as e:
-#     raise type(e)(f"Validation Error: {e}")
+except Exception as e:
+    raise type(e)(f"Validation Error: {e}")
 
 # Show render result
 # print(json.dumps(render, indent=2))
@@ -87,16 +88,15 @@ def validate_interface(assignment: str, expression: str):
 
 # print(validate_interface("i_kms", "${module.test.interfaces(kms)}"))
 
+# interfaces = {}
+# id = "123-abc"
+# for m_name, m_data in render["tfcode"]["module"].items():
+#     for o_name, o_data in m_data.get("outputs", {}).items():
+#         i = get_i_type(o_name)
+#         if i:
+#             if not i in interfaces:
+#                 interfaces[i] = {}
+#             interfaces[i][f"{id}.{m_name}"] = o_data
 
-interfaces = {}
-id = "123-abc"
-for m_name, m_data in render["tfcode"]["module"].items():
-    for o_name, o_data in m_data.get("outputs", {}).items():
-        i = get_i_type(o_name)
-        if i:
-            if not i in interfaces:
-                interfaces[i] = {}
-            interfaces[i][f"{id}.{m_name}"] = o_data
 
-
-print(json.dumps(interfaces, indent=2))
+# print(json.dumps(interfaces, indent=2))
