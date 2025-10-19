@@ -98,12 +98,23 @@ j_data = {
             }
         },
         {
+            "i_list_kms_filtered": {
+                "__block__": True,
+                "value": str(
+                    assign_interface(
+                        "i_list_kms",
+                        "${parent(base).interfaces(kms,test1),parent(test).interfaces(kms,test1)}",
+                    )
+                ),
+            }
+        },
+        {
             "i_list_kms": {
                 "__block__": True,
                 "value": str(
                     assign_interface(
                         "i_list_kms",
-                        "${parent(base).interfaces(kms),parent(test).interfaces(kms,test1)}",
+                        "${parent(base).interfaces(kms)}",
                     )
                 ),
             }
@@ -112,7 +123,7 @@ j_data = {
     ],
 }
 
-print(json.dumps(j_data, indent=2))
+# print(json.dumps(j_data, indent=2))
 
 # Remove empty resources and write file
 tfcode.write("test.tf", {i: j_data[i] for i in j_data if j_data[i] != []})

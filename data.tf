@@ -3,19 +3,19 @@ locals {
     "parent-test" = {
       interfaces = {
         kms = {
-          test1 = { "value" = 1 }
-          test2 = { "value" = 2 }
+          test1 = { "id" : "123-abc", "alias" : "test1", "value" = 1 }
+          test2 = { "id" : "123-abc", "alias" : "test2", "value" = 2 }
         }
       }
     }
     "parent-base" = {
       interfaces = {
         kms = {
-          test1 = { "value" = 3 }
-          test2 = { "value" = 4 }
+          test1 = { "id" : "000-xyz", "alias" : "test1", "value" = 3 }
+          test2 = { "id" : "000-xyz", "alias" : "test2", "value" = 4 }
         }
         base = {
-          base1 = { "value" = 5 }
+          base1 = { "id" : "000-xyz", "alias" : "base1", "value" = 5 }
         }
       }
     }
