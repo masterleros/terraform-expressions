@@ -39,7 +39,7 @@ class ExpProcessorInterface(ExpProcessor):
         )
 
     def render(self, context: ExpContext, item: ExpFound):
-        context.embrace = f"local.i_data.{item.arguments['type']}[\"{{result}}.{item.arguments['id']}\"]"
+        context.embrace = f"local.i_data.{item.arguments['type']}[\"{{result}}-{item.arguments['id']}\"]"
 
 
 class ExpProcessorInterfaces(ExpProcessor):
@@ -54,7 +54,7 @@ class ExpProcessorInterfaces(ExpProcessor):
     def render(self, context: ExpContext, item: ExpFound):
         context.embrace = (
             (
-                f"[ local.i_data.{item.arguments['type']}[\"{{result}}.{item.arguments['id']}\"] ]"
+                f"[ local.i_data.{item.arguments['type']}[\"{{result}}-{item.arguments['id']}\"] ]"
             )
             if "id" in item.arguments
             else (
@@ -198,8 +198,9 @@ class Expression(list):
         self.contextes = [self.tf_processor.parse(value) for value in self.extracted]
 
     def render(self):
+        expression = None
         for context in self.contextes:
             expression = self.tf_processor.replace(
-                self.expression, context.value, self.tf_processor.render(context)
+                self.expression, context.value, context.render()
             )
         return expression

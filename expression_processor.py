@@ -26,6 +26,12 @@ class ExpContext:
         self.found = list[ExpFound]()
         self.embrace = ""
 
+    def render(self):
+        result = ".".join([s for s in [i.f_render(self, i) for i in self.found] if s])
+        if self.embrace:
+            result = self.embrace.replace("{result}", result)
+        return result
+
 
 class ExpProcessor(list):
 
@@ -161,13 +167,13 @@ class ExpProcessorCollection(list):
 
         return None
 
-    def render(self, context: ExpContext):
-        result = ".".join(
-            [s for s in [i.f_render(context, i) for i in context.found] if s]
-        )
-        if context.embrace:
-            result = context.embrace.replace("{result}", result)
-        return result
+    # def render(self, context: ExpContext):
+    #     result = ".".join(
+    #         [s for s in [i.f_render(context, i) for i in context.found] if s]
+    #     )
+    #     if context.embrace:
+    #         result = context.embrace.replace("{result}", result)
+    #     return result
 
     def replace(self, expression: str, value: dict, new_value: str):
         return expression.replace(value, new_value)
