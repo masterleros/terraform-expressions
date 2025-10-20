@@ -130,7 +130,7 @@ class Expression(list):
                                 TokenType.INTERFACE,
                                 f"interface",
                                 arguments={"type": str},
-                                f_render=lambda c, i: f"i_{i.arguments['type']}",
+                                f_render=lambda c, i: f"i_obj_{i.arguments['type']}",
                             ),
                             ExpProcessor(
                                 TokenType.INTERFACES,

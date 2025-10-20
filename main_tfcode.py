@@ -1,4 +1,5 @@
 import tfcode
+import json
 from data import j_data
 
 j_data["locals"][0].update(
@@ -25,8 +26,8 @@ j_data["output"].append(
 
 
 # Remove empty resources and write file
-tfcode.write("test.tf", {i: j_data[i] for i in j_data if j_data[i] != []})
+# tfcode.write("test.tf", {i: j_data[i] for i in j_data if j_data[i] != []})
 
 # Read file
-# j_data = tfcode.read("main.tf")
-# print(json.dumps(j_data, indent=2))
+j_data = tfcode.read("test.tf")
+print(json.dumps(j_data, indent=2))

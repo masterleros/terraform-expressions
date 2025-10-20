@@ -5,6 +5,18 @@ import tfcode
 
 
 j_data = {
+    # "data": [
+    #     {
+    #         "tfe_output": {
+    #             "sources": {
+    #                 "__block__": True,
+    #                 "provider": "aws/custom",
+    #                 "organization": "my-org",
+    #                 "workspace": "my-workspace",
+    #             },
+    #         },
+    #     }
+    # ],
     "locals": [
         {
             "__block__": True,
@@ -16,7 +28,15 @@ j_data = {
     "output": [
         # {"i_data": {"__block__": True, "value": "${local.i_data}"}},
         {
-            "i_obj_kms": {
+            "i_obj_kms_module": {
+                "__block__": True,
+                "value": str(
+                    interfaces.assign("i_obj_kms", "${module.test1.interface(kms)}")
+                ),
+            }
+        },
+        {
+            "i_obj_kms_parent": {
                 "__block__": True,
                 "value": str(
                     interfaces.assign(

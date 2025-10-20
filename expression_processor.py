@@ -18,6 +18,11 @@ class ExpFound:
         if self.remaining is None:
             self.remaining = []
 
+    def render(self) -> str:
+        if self.f_render:
+            return self.f_render(None, self)
+        return None
+
 
 class ExpContext:
     def __init__(self, value: str):
@@ -27,9 +32,9 @@ class ExpContext:
         self.embrace = ""
         self.types = []
 
-    def get_id(self, id: Enum) -> ExpFound:
+    def get_found(self, ids: list[Enum]):
         for f in self.found:
-            if f.id == id:
+            if f.id in ids:
                 return f
         return None
 
