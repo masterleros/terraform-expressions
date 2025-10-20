@@ -192,9 +192,12 @@ class Expression(list):
         ]
     )
 
+
+class ExpressionMulti(Expression):
+
     def __init__(self, expression: str):
         self.expression = expression
-        self.extracted = self.tf_processor.extract(expression)
+        self.extracted = self.tf_processor.extract_all(expression)
         self.contextes = [self.tf_processor.parse(value) for value in self.extracted]
 
     def render(self):
@@ -204,3 +207,16 @@ class Expression(list):
                 self.expression, context.value, context.render()
             )
         return expression
+
+
+class ExpressionUnique(Expression):
+
+    def __init__(self, expression: str):
+        self.expression = expression
+        self.extracted = self.tf_processor.extract_unique(expression)
+        self.context = self.tf_processor.parse(self.extracted)
+
+    def render(self):
+        return self.tf_processor.replace(
+            self.expression, self.context.value, self.context.render()
+        )

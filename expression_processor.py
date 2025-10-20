@@ -25,8 +25,15 @@ class ExpContext:
         self.tokens = list(value.split("."))
         self.found = list[ExpFound]()
         self.embrace = ""
+        self.types = []
 
-    def render(self):
+    def get_id(self, id: Enum) -> ExpFound:
+        for f in self.found:
+            if f.id == id:
+                return f
+        return None
+
+    def render(self) -> str:
         result = ".".join([s for s in [i.f_render(self, i) for i in self.found] if s])
         if self.embrace:
             result = self.embrace.replace("{result}", result)
@@ -112,6 +119,7 @@ class ExpProcessor(list):
             raise ValueError(f"'{self.id.value}' is not supported in this context")
 
         # Update context
+        context.types.append(self.id)
         context.found.append(
             ExpFound(
                 self.id,
@@ -144,16 +152,20 @@ class ExpProcessor(list):
 
 class ExpProcessorCollection(list):
 
-    re_exp_extract = re.compile(r"\$\{([^\$\$\}]*)\}")
+    re_exp_extract_all = re.compile(r"\$\{([^\$\$\}]*)\}")
+    re_exp_extract_unique = re.compile(r"^\$\{([^\$\$\}]*)\}$")
 
     def __init__(self, processors: list[ExpProcessor]):
         self.extend(processors)
 
-    def extract(self, expression: str):
+    def extract_all(self, expression: str):
         extracted = []
-        for e_found in self.re_exp_extract.findall(expression):
+        for e_found in self.re_exp_extract_all.findall(expression):
             extracted.extend([e.extract(e_found) for e in self])
         return [i for e in extracted for i in e]
+
+    def extract_unique(self, expression: str):
+        return next(iter(self.re_exp_extract_unique.findall(expression)), None)
 
     def parse(self, value: str) -> ExpContext:
 
@@ -166,14 +178,6 @@ class ExpProcessorCollection(list):
             raise ExpTokenError(f"Invalid '{value}': {e}")
 
         return None
-
-    # def render(self, context: ExpContext):
-    #     result = ".".join(
-    #         [s for s in [i.f_render(context, i) for i in context.found] if s]
-    #     )
-    #     if context.embrace:
-    #         result = context.embrace.replace("{result}", result)
-    #     return result
 
     def replace(self, expression: str, value: dict, new_value: str):
         return expression.replace(value, new_value)

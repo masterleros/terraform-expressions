@@ -6,10 +6,10 @@ output "i_obj_kms" {
   value = local.i_data.kms["parent-base-test1"]
 }
 
-output "i_list_kms_filtered" {
-  value = flatten([[local.i_data.kms["parent-base-test1"]],[local.i_data.kms["parent-test-test1"]]])
-}
-
 output "i_list_kms" {
   value = [ for ik,iv in local.i_data.kms : iv if startswith(ik, "parent-base")]
+}
+
+output "i_list_kms_filtered" {
+  value = flatten([[local.i_data.kms["parent-base-test1"]],[local.i_data.kms["parent-test-test1"]]])
 }
